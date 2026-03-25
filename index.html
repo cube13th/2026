@@ -172,8 +172,12 @@
 </div>
 
 <script>
-  const DEFAULT_CODES = ["A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q","R","S","T","U","V","W","X","Y","Z","ㄅ","ㄆ","ㄌ","ㄍ","山","ya"];
-  const STORAGE_KEYS = { HISTORY: "codeCalc_history", STATS: "codeCalc_stats", CUSTOM_CODES: "codeCalc_custom" };
+  const DEFAULT_CODES = ["A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q","R","S","T","U","V","W","X","Y","Z","ㄅ","ㄆ","ㄇ","ㄌ","ㄍ","山","ya"];
+  const STORAGE_KEYS = { 
+    HISTORY: "codeCalc_history", 
+    STATS: "codeCalc_stats", 
+    CUSTOM_CODES: "codeCalc_custom" 
+  };
 
   const codeButtons = document.getElementById("codeButtons");
   const screen = document.getElementById("screen");
@@ -181,14 +185,12 @@
   const newCodeInput = document.getElementById("newCodeInput");
 
   let currentExpression = "";
-  let pendingLines = [];
+  let pendingLines = []; // 存放在黑幕上已按過「＝」的每一行
 
-  // 初始化按鈕
   function initCodeButtons() {
     codeButtons.innerHTML = "";
     const customCodes = JSON.parse(localStorage.getItem(STORAGE_KEYS.CUSTOM_CODES) || "[]");
     const allCodes = [...DEFAULT_CODES, ...customCodes];
-    
     allCodes.forEach(code => {
       const btn = document.createElement("button");
       btn.textContent = code;
@@ -198,7 +200,10 @@
   }
 
   function appendCode(code) {
-    if (currentExpression && !currentExpression.endsWith("+")) return;
+    if (currentExpression && !/[\+\=]$/.test(currentExpression) && !isNaN(currentExpression.slice(-1))) {
+       // 如果最後一個字是數字且沒加號，不允許直接加代號 (避免 A100B200 這種連在一起的情況)
+       currentExpression += "+";
+    }
     currentExpression += code;
     renderScreen();
   }
@@ -221,22 +226,75 @@
 
   function calculate() {
     if (!currentExpression || currentExpression.endsWith("+")) return;
-    // 簡單解析邏輯 (同原版)
+    
+    // 解析當前算式總和
     const parts = currentExpression.split("+");
     let sum = 0;
     parts.forEach(p => {
-      const val = parseInt(p.replace(/[^\d]/g, '')) || 0;
-      sum += val;
+      const valMatch = p.match(/\d+$/); // 抓取結尾的數字
+      sum += valMatch ? parseInt(valMatch[0]) : 0;
     });
+
     pendingLines.push({ expression: currentExpression, total: sum });
     currentExpression = "";
     renderScreen();
   }
 
-  // 彈窗控制
+  // --- 核心功能：結束歸檔 ---
+  document.getElementById("archiveBtn").onclick = () => {
+    if (pendingLines.length === 0 && !currentExpression) {
+      alert("目前沒有資料可以歸檔喔！");
+      return;
+    }
+
+    // 如果輸入框還有沒按＝的，幫忙自動按下去
+    if (currentExpression) calculate();
+
+    const stats = JSON.parse(localStorage.getItem(STORAGE_KEYS.STATS) || "{}");
+    const history = JSON.parse(localStorage.getItem(STORAGE_KEYS.HISTORY) || "[]");
+
+    pendingLines.forEach(line => {
+      // 使用正規表達式拆解：(代號部分)(數字部分)
+      // 例如：A100 -> A, 100 ; 山500 -> 山, 500
+      const segments = line.expression.split("+");
+      
+      segments.forEach(seg => {
+        const match = seg.match(/^([^\d]+)(\d+)$/); 
+        if (match) {
+          const code = match[1]; // 代號
+          const value = parseInt(match[2]); // 數字
+          
+          if (!stats[code]) stats[code] = [];
+          stats[code].push(value); // 將數字登記到對應代號的陣列中
+        } else if (!isNaN(seg)) {
+          // 如果只有數字，歸類到「無代號」
+          if (!stats["無代號"]) stats["無代號"] = [];
+          stats["無代號"].push(parseInt(seg));
+        }
+      });
+
+      // 存入歷史記錄
+      history.unshift({
+        expression: line.expression,
+        total: line.total,
+        createdAt: new Date().toLocaleString()
+      });
+    });
+
+    // 存回 LocalStorage
+    localStorage.setItem(STORAGE_KEYS.STATS, JSON.stringify(stats));
+    localStorage.setItem(STORAGE_KEYS.HISTORY, JSON.stringify(history));
+
+    // 清空畫面
+    pendingLines = [];
+    currentExpression = "";
+    renderScreen();
+    alert("歸檔成功！數據已分類至統計表。");
+  };
+
+  // 彈窗與其他按鈕邏輯... (維持不變)
   document.getElementById("addCodeBtn").onclick = () => { addModal.style.display = "flex"; newCodeInput.focus(); };
   function closeModal() { addModal.style.display = "none"; newCodeInput.value = ""; }
-
   document.getElementById("confirmAddBtn").onclick = () => {
     const val = newCodeInput.value.trim();
     if (val) {
@@ -250,7 +308,6 @@
     closeModal();
   };
 
-  // 數字鍵盤事件
   document.querySelectorAll(".calc-grid button").forEach(btn => {
     const val = btn.dataset.value;
     const act = btn.dataset.action;
@@ -263,15 +320,7 @@
   });
 
   document.getElementById("statsBtn").onclick = () => location.href = "stats.html";
-  document.getElementById("historyBtn").onclick = () => alert("記錄功能開發中，請見歸檔記錄"); // 簡化邏輯
-  document.getElementById("archiveBtn").onclick = () => {
-    // 歸檔邏輯 (簡化示意)
-    if (pendingLines.length > 0) {
-      alert("已歸檔 " + pendingLines.length + " 筆資料");
-      pendingLines = [];
-      renderScreen();
-    }
-  };
+  document.getElementById("historyBtn").onclick = () => { location.href = "index.html"; /* 或切換模式 */ };
 
   initCodeButtons();
   renderScreen();
