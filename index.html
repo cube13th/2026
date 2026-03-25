@@ -83,3 +83,134 @@
     <button id="confirmAddBtn" style="padding:10px 20px; background:#f39a18; color:white; border:none; border-radius:5px;">確定</button>
     <button onclick="closeModal()" style="padding:10px 20px; background:#ccc; border:none; border-radius:5px; margin-left:10px;">取消</button>
   </div>
+</div>
+
+<script>
+  const DEFAULT_CODES = [
+    "A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q","R","S","T","U","V","W","X","Y","Z",
+    "ㄅ","ㄆ","ㄇ","ㄈ","ㄌ","山","ya"
+  ];
+  const STORAGE_KEYS = { STATS: "codeCalc_stats", CUSTOM: "codeCalc_custom", HISTORY: "codeCalc_history" };
+  const screen = document.getElementById("screen");
+  let currentExpr = "";
+  let pendingLines = [];
+  let isViewingHistory = false;
+
+  function initButtons() {
+    const codeBox = document.getElementById("codeButtons");
+    codeBox.innerHTML = "";
+    const custom = JSON.parse(localStorage.getItem(STORAGE_KEYS.CUSTOM) || "[]");
+    [...DEFAULT_CODES, ...custom].forEach(code => {
+      const btn = document.createElement("button");
+      btn.textContent = code;
+      btn.onclick = () => { if(isViewingHistory) toggleHistory(); currentExpr += code; render(); };
+      codeBox.appendChild(btn);
+    });
+  }
+
+  function render() {
+    if (isViewingHistory) return;
+    let text = pendingLines.map(l => `${l.expr}＝${l.total}`).join("\n");
+    if (currentExpr) text += (text ? "\n" : "") + currentExpr;
+    screen.textContent = text || "請開始輸入...";
+    screen.scrollTop = screen.scrollHeight;
+  }
+
+  function calculate() {
+    if (!currentExpr || /[\+\-]$/.test(currentExpr)) return;
+    // 計算邏輯：提取所有數字並相加
+    const numbers = currentExpr.split("+").map(p => {
+      const match = p.match(/\d+$/);
+      return match ? parseInt(match[0]) : 0;
+    });
+    const sum = numbers.reduce((a, b) => a + b, 0);
+    pendingLines.push({ expr: currentExpr, total: sum });
+    currentExpr = "";
+    render();
+  }
+
+  // 修改後的歸檔邏輯：精準拆解每一片段
+  document.getElementById("archiveBtn").onclick = () => {
+    if (currentExpr) calculate();
+    if (pendingLines.length === 0) return;
+
+    const stats = JSON.parse(localStorage.getItem(STORAGE_KEYS.STATS) || "{}");
+    const history = JSON.parse(localStorage.getItem(STORAGE_KEYS.HISTORY) || "[]");
+
+    pendingLines.forEach(line => {
+      history.push(`${line.expr}＝${line.total}`);
+      
+      // 拆解算式片段，例如 "500+60+B300"
+      line.expr.split("+").forEach(part => {
+        // 使用正規表達式嘗試抓取 (代號)(數字)
+        const codeMatch = part.match(/^([^\d]+)(\d+)$/);
+        
+        if (codeMatch) {
+          // 情況 A：有代號，例如 B300
+          const code = codeMatch[1];
+          const val = parseInt(codeMatch[2]);
+          if (!stats[code]) stats[code] = [];
+          stats[code].push(val);
+        } else if (/^\d+$/.test(part)) {
+          // 情況 B：純數字，例如 500
+          const val = parseInt(part);
+          if (!stats["無代號"]) stats["無代號"] = [];
+          stats["無代號"].push(val);
+        }
+      });
+    });
+
+    localStorage.setItem(STORAGE_KEYS.STATS, JSON.stringify(stats));
+    localStorage.setItem(STORAGE_KEYS.HISTORY, JSON.stringify(history));
+    pendingLines = []; currentExpr = ""; render();
+    alert("歸檔成功！");
+  };
+
+  function toggleHistory() {
+    isViewingHistory = !isViewingHistory;
+    const btn = document.getElementById("historyBtn");
+    if (isViewingHistory) {
+      btn.textContent = "返回輸入";
+      const history = JSON.parse(localStorage.getItem(STORAGE_KEYS.HISTORY) || "[]");
+      screen.textContent = history.length ? history.join("\n") : "暫無歸檔記錄";
+      screen.scrollTop = 0;
+    } else {
+      btn.textContent = "觀看記錄";
+      render();
+    }
+  }
+
+  document.getElementById("historyBtn").onclick = toggleHistory;
+  document.getElementById("addCodeBtn").onclick = () => document.getElementById("addModal").style.display = "flex";
+  function closeModal() { document.getElementById("addModal").style.display = "none"; }
+  
+  document.getElementById("confirmAddBtn").onclick = () => {
+    const val = document.getElementById("newCodeInput").value.trim();
+    if (val && !DEFAULT_CODES.includes(val)) {
+      const custom = JSON.parse(localStorage.getItem(STORAGE_KEYS.CUSTOM) || "[]");
+      if (!custom.includes(val)) {
+        custom.push(val);
+        localStorage.setItem(STORAGE_KEYS.CUSTOM, JSON.stringify(custom));
+        initButtons();
+      }
+    }
+    closeModal();
+  };
+
+  document.querySelectorAll(".calc-grid button").forEach(btn => {
+    btn.onclick = () => {
+      if (isViewingHistory) toggleHistory();
+      const v = btn.dataset.value, a = btn.dataset.action;
+      if (v) currentExpr += v;
+      if (a === "plus") currentExpr += (currentExpr && !currentExpr.endsWith("+") ? "+" : "");
+      if (a === "equals") calculate();
+      if (a === "backspace") currentExpr = currentExpr.slice(0, -1);
+      render();
+    };
+  });
+
+  initButtons();
+  render();
+</script>
+</body>
+</html>
