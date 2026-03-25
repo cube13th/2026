@@ -48,7 +48,7 @@
   </div>
 
   <script>
-    const CODES = ["A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q","R","S","T","U","V","W","X","Y","Z","ㄅ","ㄆ","ㄇ","ㄌ","ㄍ","山","ya","無代號"];
+    const CODES = ["A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q","R","S","T","U","V","W","X","Y","Z","ㄅ","ㄆ","ㄇ","ㄈ","ㄌ","ㄍ","山","ya","無代號"];
     const STORAGE_KEYS = { HISTORY: "codeCalc_history", STATS: "codeCalc_stats" };
 
     const codeButtons = document.getElementById("codeButtons");
@@ -80,14 +80,15 @@
     }
 
     function initCodeButtons() {
-      CODES.slice(0, -1).forEach(code => addButton(code, codeButtons));
-      document.getElementById("noCodeBtn").addEventListener("click", () => {
-        selectedCode = "無代號";
-        updateSelectedButton();
-        renderTable(selectedCode);
-      });
-      updateSelectedButton();
-    }
+    const custom = JSON.parse(localStorage.getItem("codeCalc_custom") || "[]");
+    const allCodes = [...DEFAULT_CODES, ...custom];
+    
+    const container = document.getElementById("codeButtons");
+    container.innerHTML = "";
+    allCodes.forEach(code => {
+        // ... 原有的建立按鈕邏輯 ...
+    });
+}
 
     function updateSelectedButton() {
       document.querySelectorAll("[data-code]").forEach(btn => {
