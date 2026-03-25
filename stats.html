@@ -93,14 +93,19 @@
     }
 
     function initCodeButtons() {
-      CODES.slice(0, -1).forEach(code => addButton(code, codeButtons));
-      document.getElementById("noCodeBtn").addEventListener("click", () => {
-        selectedCode = "無代號";
-        updateSelectedButton();
-        renderTable(selectedCode);
-      });
-      updateSelectedButton();
-    }
+  const customCodes = JSON.parse(localStorage.getItem(STORAGE_KEYS.CUSTOM_CODES) || "[]");
+  const allCodes = [...CODES.slice(0, -1), ...customCodes]; // 組合原本代號與新代號
+  
+  codeButtons.innerHTML = ""; // 清空舊按鈕
+  allCodes.forEach(code => addButton(code, codeButtons));
+  
+  document.getElementById("noCodeBtn").addEventListener("click", () => {
+    selectedCode = "無代號";
+    updateSelectedButton();
+    renderTable(selectedCode);
+  });
+  updateSelectedButton();
+}
 
     function updateSelectedButton() {
       document.querySelectorAll("[data-code]").forEach(btn => {
