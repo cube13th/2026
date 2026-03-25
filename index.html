@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>代號計算頁</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: "Microsoft JhengHei", "PingFang TC", sans-serif; background: #efefef; color: #111; }
+    .page { width: 100%; min-height: 100vh; padding: 28px; display: grid; grid-template-columns: 620px 1fr; gap: 28px; }
+    .left, .right { display: flex; flex-direction: column; }
+    .codes { display: grid; grid-template-columns: repeat(8, 1fr); gap: 12px; margin-bottom: 28px; }
+    .codes button, .calc-grid button, .action-btn { border: 2px solid #333; border-radius: 16px; background: #fafafa; cursor: pointer; transition: transform .08s ease, background .08s ease; }
+    button:hover { background: #f2f2f2; } button:active { transform: scale(0.98); }
+    .codes button { height: 66px; font-size: 30px; }
+    .calc-area { display: grid; gap: 16px; }
+    .calc-grid { display: grid; grid-template-columns: repeat(4, 1fr); border: 2px solid #a7a7a7; background: #ddd; overflow: hidden; }
+    .calc-grid button { border-radius: 0; border: 1px solid #a7a7a7; background: #d9d9d9; height: 118px; font-size: 54px; font-weight: 700; }
+    .calc-grid button.wide-op { grid-row: span 2; height: 236px; font-size: 64px; }
+    .bottom-actions { display: grid; grid-template-columns: 175px 175px 1fr; gap: 18px; align-items: stretch; }
+    .action-btn { background: #cfcfcf; min-height: 150px; font-size: 28px; font-weight: 700; padding: 18px; line-height: 1.25; }
+    .archive-btn { background: #f39a18; min-height: 150px; border: none; border-radius: 0; font-size: 40px; font-weight: 800; }
+    .screen-wrap { display: flex; flex-direction: column; gap: 16px; height: 100%; }
+    .screen { background: #000; color: #fff; min-height: 548px; max-height: 78vh; padding: 20px 22px; overflow-y: auto; white-space: pre-wrap; word-break: break-word; border: 1px solid #222; font-size: 34px; line-height: 1.6; }
+    .mode-label { font-size: 18px; color: #666; padding-left: 2px; }
+    .history-item { padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,.15); }
+    .history-time { color: #bdbdbd; font-size: 18px; margin-top: 4px; }
+    .hint { color: #aaa; font-size: 24px; }
+    .message { margin-top: 8px; color: #555; min-height: 28px; font-size: 18px; }
+    @media (max-width: 1200px) { .page { grid-template-columns: 1fr; } .screen { min-height: 300px; } }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="left">
+      <div class="codes" id="codeButtons"></div>
+      <div class="calc-area">
+        <div class="calc-grid">
+          <button data-value="7">7</button><button data-value="8">8</button><button data-value="9">9</button><button class="wide-op" data-action="plus">+</button>
+          <button data-value="4">4</button><button data-value="5">5</button><button data-value="6">6</button>
+          <button data-value="1">1</button><button data-value="2">2</button><button data-value="3">3</button><button class="wide-op" data-action="equals">＝</button>
+          <button style="grid-column: span 2;" data-value="0">0</button><button data-value="00">00</button><button data-action="backspace">←</button>
+        </div>
+        <div class="bottom-actions">
+          <button class="action-btn" id="statsBtn">查看<br>代號<br>統計</button>
+          <button class="action-btn" id="historyBtn">觀看<br>記錄</button>
+          <button class="archive-btn" id="archiveBtn">結案<br>歸檔</button>
+        </div>
+        <div class="message" id="message"></div>
+      </div>
+    </div>
+    <div class="right">
+      <div class="screen-wrap">
+        <div class="mode-label" id="modeLabel">目前畫面：輸入算式</div>
+        <div class="screen" id="screen"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const CODES = ["A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q","R","S","T","U","V","W","X","Y","Z","ㄅ","ㄌ","ㄍ","山","ya"];
+    const EXTRA_CODE = "無代號";
+    const STORAGE_KEYS = { HISTORY: "codeCalc_history", STATS: "codeCalc_stats" };
+
+    const codeButtons = document.getElementById("codeButtons");
+    const screen = document.getElementById("screen");
+    const historyBtn = document.getElementById("historyBtn");
+    const statsBtn = document.getElementById("statsBtn");
+    const archiveBtn = document.getElementById("archiveBtn");
+    const message = document.getElementById("message");
+    const modeLabel = document.getElementById("modeLabel");
+
+    let currentExpression = "";
+    let pendingLines = [];
+    let screenMode = "input";
+
+    function initCodeButtons() {
+      CODES.forEach(code => {
+        const btn = document.createElement("button");
+        btn.textContent = code;
+        btn.addEventListener("click", () => appendCode(code));
+        codeButtons.appendChild(btn);
+      });
+    }
+
+    function getHistory() { return JSON.parse(localStorage.getItem(STORAGE_KEYS.HISTORY) || "[]"); }
+    function setHistory(data) { localStorage.setItem(STORAGE_KEYS.HISTORY, JSON.stringify(data)); }
+    function getStats() { return JSON.parse(localStorage.getItem(STORAGE_KEYS.STATS) || "{}"); }
+    function setStats(data) { localStorage.setItem(STORAGE_KEYS.STATS, JSON.stringify(data)); }
+    function setMessage(text, isError = false) { message.textContent = text; message.style.color = isError ? "#b00020" : "#555"; }
+
+    function scrollScreenToBottom() {
+      requestAnimationFrame(() => { screen.scrollTop = screen.scrollHeight; });
+    }
+
+    function canAppendCode() {
+      if (!currentExpression) return true;
+      return currentExpression.slice(-1) === "+";
+    }
+
+    function appendCode(code) {
+      if (screenMode !== "input") screenMode = "input";
+      if (!canAppendCode()) {
+        setMessage("請先輸入 +，或在新的一行重新開始。", true);
+        renderScreen();
+        return;
+      }
+      currentExpression += code;
+      setMessage("");
+      renderScreen();
+    }
+
+    function appendValue(value) {
+      if (screenMode !== "input") screenMode = "input";
+      currentExpression += value;
+      setMessage("");
+      renderScreen();
+    }
+
+    function appendPlus() {
+      if (screenMode !== "input") screenMode = "input";
+      if (!currentExpression) return setMessage("請先輸入代號或數字。", true);
+      if (currentExpression.endsWith("+")) return setMessage("已經有 + 號了。", true);
+      const parsed = parseExpression(currentExpression);
+      if (!parsed.valid) return setMessage("目前算式格式不完整，無法加入 +。", true);
+      currentExpression += "+";
+      setMessage("");
+      renderScreen();
+    }
+
+    function backspace() {
+      if (screenMode !== "input") screenMode = "input";
+      currentExpression = currentExpression.slice(0, -1);
+      setMessage("");
+      renderScreen();
+    }
+
+    function parseTerm(part) {
+      const codeMatch = part.match(/^([A-Z]|ㄅ|ㄌ|ㄍ|山|ya)(\d+)$/);
+      if (codeMatch) return { code: codeMatch[1], value: Number(codeMatch[2]) };
+      const numberMatch = part.match(/^(\d+)$/);
+      if (numberMatch) return { code: EXTRA_CODE, value: Number(numberMatch[1]) };
+      return null;
+    }
+
+    function parseExpression(raw) {
+      const cleaned = raw.trim();
+      if (!cleaned) return { valid: false, items: [], reason: "empty" };
+      if (cleaned.startsWith("+") || cleaned.endsWith("+")) return { valid: false, items: [], reason: "format" };
+      const parts = cleaned.split("+");
+      const items = [];
+      for (const part of parts) {
+        if (!part) return { valid: false, items: [], reason: "format" };
+        const term = parseTerm(part);
+        if (!term) return { valid: false, items: [], reason: "format" };
+        items.push(term);
+      }
+      return { valid: true, items, reason: "" };
+    }
+
+    function calculate() {
+      if (!currentExpression) return setMessage("請先輸入算式。", true);
+      const parsed = parseExpression(currentExpression);
+      if (!parsed.valid) return setMessage("算式格式不正確，請確認每段都是「代號+數字」或「只有數字」。", true);
+      const total = parsed.items.reduce((sum, item) => sum + item.value, 0);
+      pendingLines.push({ expression: currentExpression, total });
+      currentExpression = "";
+      setMessage("已完成本行計算，可繼續在下一行輸入。");
+      renderScreen();
+    }
+
+    function archiveCurrent() {
+      if (currentExpression.trim()) return setMessage("目前還有未按＝的算式，請先計算後再結案歸檔。", true);
+      if (pendingLines.length === 0) return setMessage("目前沒有可歸檔的算式。", true);
+
+      const history = getHistory();
+      const stats = getStats();
+
+      pendingLines.forEach(line => {
+        const parsed = parseExpression(line.expression);
+        if (parsed.valid) {
+          parsed.items.forEach(item => {
+            if (!stats[item.code]) stats[item.code] = [];
+            stats[item.code].push(item.value);
+          });
+        }
+        history.unshift({
+          expression: line.expression,
+          total: line.total,
+          createdAt: new Date().toLocaleString("zh-TW", { hour12: false })
+        });
+      });
+
+      setHistory(history);
+      setStats(stats);
+      pendingLines = [];
+      currentExpression = "";
+      screenMode = "input";
+      setMessage("已將目前所有算式一起結案歸檔。");
+      renderScreen();
+    }
+
+    function showHistory() {
+      screenMode = "history";
+      renderScreen();
+      setMessage("");
+    }
+
+    function renderInputScreen() {
+      modeLabel.textContent = "目前畫面：輸入算式";
+      const lines = pendingLines.map(line => `${line.expression}＝${line.total}`);
+      if (currentExpression) lines.push(currentExpression);
+      if (lines.length === 0) {
+        screen.innerHTML = '<div class="hint">請點選左側代號與數字輸入算式。</div>';
+      } else {
+        screen.textContent = lines.join("\n");
+      }
+      scrollScreenToBottom();
+    }
+
+    function renderHistoryScreen() {
+      modeLabel.textContent = "目前畫面：觀看記錄";
+      const history = getHistory();
+      if (history.length === 0) {
+        screen.innerHTML = '<div class="hint">目前還沒有任何歸檔記錄。</div>';
+        return;
+      }
+      screen.innerHTML = history.map(item => `
+        <div class="history-item">
+          <div>${item.expression}＝${item.total}</div>
+          <div class="history-time">${item.createdAt}</div>
+        </div>
+      `).join("");
+    }
+
+    function renderScreen() {
+      if (screenMode === "history") renderHistoryScreen();
+      else renderInputScreen();
+    }
+
+    document.querySelectorAll(".calc-grid button").forEach(btn => {
+      const value = btn.dataset.value;
+      const action = btn.dataset.action;
+      btn.addEventListener("click", () => {
+        if (value) appendValue(value);
+        if (action === "plus") appendPlus();
+        if (action === "equals") calculate();
+        if (action === "backspace") backspace();
+      });
+    });
+
+    historyBtn.addEventListener("click", showHistory);
+    statsBtn.addEventListener("click", () => { window.location.href = "stats.html"; });
+    archiveBtn.addEventListener("click", archiveCurrent);
+
+    initCodeButtons();
+    renderScreen();
+  </script>
+</body>
+</html>

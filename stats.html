@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>代號統計頁</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: "Microsoft JhengHei", "PingFang TC", sans-serif; background: #efefef; color: #111; }
+    .page { width: 100%; min-height: 100vh; padding: 28px; display: grid; grid-template-columns: 620px 1fr; gap: 28px; }
+    .codes { display: grid; grid-template-columns: repeat(8, 1fr); gap: 12px; margin-bottom: 24px; }
+    .codes button, .action-btn, .special-code button { border: 2px solid #333; border-radius: 16px; background: #fafafa; cursor: pointer; transition: transform .08s ease, background .08s ease; }
+    button:hover { background: #f2f2f2; } button:active { transform: scale(0.98); }
+    .codes button { height: 66px; font-size: 30px; }
+    .special-code { margin-bottom: 220px; }
+    .special-code button { width: 100%; height: 72px; font-size: 28px; }
+    .left-actions { display: flex; gap: 18px; align-items: flex-start; }
+    .action-btn { background: #cfcfcf; min-width: 175px; min-height: 150px; font-size: 28px; font-weight: 700; padding: 18px; line-height: 1.25; }
+    .right-panel { background: #000; color: #fff; padding: 12px; display: flex; flex-direction: column; min-height: 690px; }
+    .table-wrap { background: #f7f7f7; flex: 1; overflow: auto; border: 1px solid #333; }
+    table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+    th, td { border: 1px solid #c8c8c8; height: 48px; text-align: center; color: #111; font-size: 24px; min-width: 120px; }
+    th { background: #ececec; position: sticky; top: 0; z-index: 1; }
+    .footer { padding: 18px 8px 6px; font-size: 34px; font-weight: 700; }
+    .selected { background: #e9e9e9 !important; border-color: #000 !important; }
+    .empty { padding: 28px; color: #666; font-size: 22px; }
+    .sub-title { margin-bottom: 10px; color: #666; font-size: 18px; }
+    @media (max-width: 1200px) { .page { grid-template-columns: 1fr; } .special-code { margin-bottom: 40px; } }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div>
+      <div class="codes" id="codeButtons"></div>
+      <div class="special-code"><button id="noCodeBtn" data-code="無代號">無代號</button></div>
+      <div class="left-actions">
+        <button class="action-btn" id="backBtn">回<br>計算頁</button>
+        <button class="action-btn" id="clearBtn">清除<br>所有<br>紀錄</button>
+      </div>
+    </div>
+    <div>
+      <div class="sub-title" id="subtitle">請先點選左側代號</div>
+      <div class="right-panel">
+        <div class="table-wrap" id="tableWrap"></div>
+        <div class="footer" id="totalText">total：0</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const CODES = ["A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q","R","S","T","U","V","W","X","Y","Z","ㄅ","ㄌ","ㄍ","山","ya","無代號"];
+    const STORAGE_KEYS = { HISTORY: "codeCalc_history", STATS: "codeCalc_stats" };
+
+    const codeButtons = document.getElementById("codeButtons");
+    const tableWrap = document.getElementById("tableWrap");
+    const totalText = document.getElementById("totalText");
+    const subtitle = document.getElementById("subtitle");
+    let selectedCode = "A";
+
+    function getStats() { return JSON.parse(localStorage.getItem(STORAGE_KEYS.STATS) || "{}"); }
+
+    function clearAll() {
+      const ok = window.confirm("是否確定清除所有紀錄？");
+      if (!ok) return;
+      localStorage.removeItem(STORAGE_KEYS.STATS);
+      localStorage.removeItem(STORAGE_KEYS.HISTORY);
+      renderTable(selectedCode);
+    }
+
+    function addButton(code, container) {
+      const btn = document.createElement("button");
+      btn.textContent = code;
+      btn.dataset.code = code;
+      btn.addEventListener("click", () => {
+        selectedCode = code;
+        updateSelectedButton();
+        renderTable(code);
+      });
+      container.appendChild(btn);
+    }
+
+    function initCodeButtons() {
+      CODES.slice(0, -1).forEach(code => addButton(code, codeButtons));
+      document.getElementById("noCodeBtn").addEventListener("click", () => {
+        selectedCode = "無代號";
+        updateSelectedButton();
+        renderTable(selectedCode);
+      });
+      updateSelectedButton();
+    }
+
+    function updateSelectedButton() {
+      document.querySelectorAll("[data-code]").forEach(btn => {
+        btn.classList.toggle("selected", btn.dataset.code === selectedCode);
+      });
+    }
+
+    function chunkArray(arr, size) {
+      const rows = [];
+      for (let i = 0; i < arr.length; i += size) rows.push(arr.slice(i, i + size));
+      return rows;
+    }
+
+    function renderTable(code) {
+      const stats = getStats();
+      const values = stats[code] || [];
+      subtitle.textContent = `目前代號：${code}`;
+
+      if (values.length === 0) {
+        tableWrap.innerHTML = '<div class="empty">這個代號目前沒有任何記錄。</div>';
+        totalText.textContent = "total：0";
+        return;
+      }
+
+      const cols = 8;
+      const rows = chunkArray(values, cols);
+      let html = "<table><thead><tr>";
+      for (let i = 1; i <= cols; i++) html += `<th>${code}</th>`;
+      html += "</tr></thead><tbody>";
+      rows.forEach(row => {
+        html += "<tr>";
+        for (let i = 0; i < cols; i++) html += `<td>${row[i] ?? ""}</td>`;
+        html += "</tr>";
+      });
+      html += "</tbody></table>";
+
+      tableWrap.innerHTML = html;
+      totalText.textContent = `total：${values.reduce((sum, n) => sum + Number(n), 0)}`;
+    }
+
+    document.getElementById("backBtn").addEventListener("click", () => { window.location.href = "index.html"; });
+    document.getElementById("clearBtn").addEventListener("click", clearAll);
+
+    initCodeButtons();
+    renderTable(selectedCode);
+  </script>
+</body>
+</html>
