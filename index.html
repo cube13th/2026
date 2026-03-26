@@ -68,7 +68,7 @@
     </div>
 
     <div class="action-grid">
-      <button class="action-btn" onclick="location.href='stats.html'">代號統計</button>
+      <button class="action-btn" id="toStatsBtn">代號統計</button>
       <button class="action-btn" id="historyBtn">觀看記錄</button>
       <button class="action-btn" id="addCodeBtn">新增代號</button>
       <button class="action-btn archive-btn" id="archiveBtn">結束歸檔</button>
@@ -118,7 +118,6 @@
 
   function calculate() {
     if (!currentExpr || /[\+\-]$/.test(currentExpr)) return;
-    // 計算邏輯：提取所有數字並相加
     const numbers = currentExpr.split("+").map(p => {
       const match = p.match(/\d+$/);
       return match ? parseInt(match[0]) : 0;
@@ -129,30 +128,23 @@
     render();
   }
 
-  // 修改後的歸檔邏輯：精準拆解每一片段
-  document.getElementById("archiveBtn").onclick = () => {
+  // 歸檔核心邏輯
+  function processArchive() {
     if (currentExpr) calculate();
-    if (pendingLines.length === 0) return;
+    if (pendingLines.length === 0) return false;
 
     const stats = JSON.parse(localStorage.getItem(STORAGE_KEYS.STATS) || "{}");
     const history = JSON.parse(localStorage.getItem(STORAGE_KEYS.HISTORY) || "[]");
 
     pendingLines.forEach(line => {
       history.push(`${line.expr}＝${line.total}`);
-      
-      // 拆解算式片段，例如 "500+60+B300"
       line.expr.split("+").forEach(part => {
-        // 使用正規表達式嘗試抓取 (代號)(數字)
         const codeMatch = part.match(/^([^\d]+)(\d+)$/);
-        
         if (codeMatch) {
-          // 情況 A：有代號，例如 B300
-          const code = codeMatch[1];
-          const val = parseInt(codeMatch[2]);
+          const code = codeMatch[1], val = parseInt(codeMatch[2]);
           if (!stats[code]) stats[code] = [];
           stats[code].push(val);
         } else if (/^\d+$/.test(part)) {
-          // 情況 B：純數字，例如 500
           const val = parseInt(part);
           if (!stats["無代號"]) stats["無代號"] = [];
           stats["無代號"].push(val);
@@ -163,7 +155,25 @@
     localStorage.setItem(STORAGE_KEYS.STATS, JSON.stringify(stats));
     localStorage.setItem(STORAGE_KEYS.HISTORY, JSON.stringify(history));
     pendingLines = []; currentExpr = ""; render();
-    alert("歸檔成功！");
+    return true;
+  }
+
+  // 「結束歸檔」按鈕
+  document.getElementById("archiveBtn").onclick = () => {
+    if (processArchive()) alert("歸檔成功！");
+  };
+
+  // 「代號統計」按鈕：離開前判斷
+  document.getElementById("toStatsBtn").onclick = () => {
+    // 檢查是否有尚未歸檔的內容（pendingLines 或正在輸入的內容）
+    if (pendingLines.length > 0 || currentExpr !== "") {
+      if (confirm("將離開此畫面，系統將自動結束歸檔。")) {
+        processArchive();
+        location.href = "stats.html";
+      }
+    } else {
+      location.href = "stats.html";
+    }
   };
 
   function toggleHistory() {
