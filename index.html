@@ -5,51 +5,136 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>iPad 代號計算器</title>
   <style>
-    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    /* 鎖定手勢與縮放 */
+    * { 
+      box-sizing: border-box; 
+      -webkit-tap-highlight-color: transparent; 
+      touch-action: manipulation; /* 禁用雙擊縮放 */
+      user-select: none; /* 禁用長按反白選取文字 */
+      -webkit-user-select: none;
+    }
+
     body { 
-      margin: 0; font-family: "Microsoft JhengHei", sans-serif; 
-      background: #efefef; height: 100vh; overflow: hidden; 
+      margin: 0; 
+      font-family: "Microsoft JhengHei", sans-serif; 
+      background: #efefef; 
+      height: 100vh; 
+      overflow: hidden; /* 禁止全頁面滑動 */
     }
     
-    .page { display: flex; flex-direction: column; height: 100vh; padding: 15px; gap: 15px; }
+    .page { 
+      display: flex; 
+      flex-direction: column; 
+      height: 100vh; 
+      padding: 12px; /* 縮小邊距 */
+      gap: 12px; 
+    }
 
-    /* 上段：代號與黑幕 (可滑動) */
-    .top-section { display: grid; grid-template-columns: 450px 1fr; gap: 15px; flex: 1; min-height: 0; }
+    /* 上段：佈局微調縮小 */
+    .top-section { 
+      display: grid; 
+      grid-template-columns: 400px 1fr; /* 寬度從450縮至400 */
+      gap: 12px; 
+      flex: 1; 
+      min-height: 0; 
+    }
 
-    .codes-container { overflow-y: auto; background: #fff; border-radius: 8px; padding: 10px; border: 1px solid #ccc; }
-    .codes { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; }
-    .codes button { height: 55px; font-size: 22px; border: 2px solid #333; border-radius: 10px; background: #fff; cursor: pointer; }
+    .codes-container { 
+      overflow-y: auto; 
+      background: #fff; 
+      border-radius: 8px; 
+      padding: 8px; 
+      border: 1px solid #ccc; 
+    }
+
+    .codes { 
+      display: grid; 
+      grid-template-columns: repeat(6, 1fr); 
+      gap: 6px; 
+    }
+
+    .codes button { 
+      height: 52px; /* 稍微變矮一點點 */
+      font-size: 20px; 
+      border: 2px solid #333; 
+      border-radius: 8px; 
+      background: #fff; 
+      cursor: pointer; 
+    }
 
     .screen { 
-      background: #000; color: #00ff41; padding: 20px; font-size: 28px; 
-      border-radius: 8px; overflow-y: auto; white-space: pre-wrap;
+      background: #000; 
+      color: #00ff41; 
+      padding: 15px; 
+      font-size: 26px; 
+      border-radius: 8px; 
+      overflow-y: auto; 
+      white-space: pre-wrap;
+      user-select: text; /* 只有黑幕內允許選取內容（如果需要複製的話） */
+      -webkit-user-select: text;
     }
 
-    /* 下段：計算盤與功能鈕 (固定) */
-    .bottom-section { display: grid; grid-template-columns: 450px 1fr; gap: 15px; height: 320px; flex-shrink: 0; }
+    /* 下段：計算盤縮小高度 */
+    .bottom-section { 
+      display: grid; 
+      grid-template-columns: 400px 1fr; 
+      gap: 12px; 
+      height: 280px; /* 從320縮至280 */
+      flex-shrink: 0; 
+    }
 
     .calc-grid { 
-      display: grid; grid-template-columns: repeat(3, 1fr) 100px; grid-template-rows: repeat(4, 1fr);
-      background: #bbb; gap: 1px; border: 2px solid #666;
+      display: grid; 
+      grid-template-columns: repeat(3, 1fr) 90px; 
+      grid-template-rows: repeat(4, 1fr);
+      background: #bbb; 
+      gap: 1px; 
+      border: 2px solid #666;
     }
-    .calc-grid button { border: none; background: #d9d9d9; font-size: 32px; font-weight: bold; cursor: pointer; }
-    .calc-grid .wide-op { grid-column: 4; grid-row: span 2; background: #f39a18; color: white; }
 
-    .action-grid { display: grid; grid-template-columns: repeat(2, 1fr); grid-template-rows: repeat(2, 1fr); gap: 10px; }
-    .action-btn { background: #b5b5b5; border: none; border-radius: 8px; font-size: 24px; font-weight: 700; cursor: pointer; }
+    .calc-grid button { 
+      border: none; 
+      background: #d9d9d9; 
+      font-size: 28px; 
+      font-weight: bold; 
+      cursor: pointer; 
+    }
+
+    .calc-grid .wide-op { 
+      grid-column: 4; 
+      grid-row: span 2; 
+      background: #f39a18; 
+      color: white; 
+    }
+
+    .action-grid { 
+      display: grid; 
+      grid-template-columns: repeat(2, 1fr); 
+      grid-template-rows: repeat(2, 1fr); 
+      gap: 8px; 
+    }
+
+    .action-btn { 
+      background: #b5b5b5; 
+      border: none; 
+      border-radius: 8px; 
+      font-size: 20px; 
+      font-weight: 700; 
+      cursor: pointer; 
+    }
+
     .archive-btn { background: #e74c3c; color: white; }
 
+    /* 彈窗縮小 */
     .modal {
       display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
       background: rgba(0,0,0,0.7); justify-content: center; align-items: center; z-index: 100;
     }
-    .modal-content { background: #fff; padding: 25px; border-radius: 15px; width: 350px; text-align: center; }
-    .modal-content input { width: 100%; padding: 10px; font-size: 20px; margin: 15px 0; }
+    .modal-content { background: #fff; padding: 20px; border-radius: 12px; width: 320px; text-align: center; }
+    .modal-content input { width: 100%; padding: 8px; font-size: 18px; margin: 12px 0; }
   </style>
 </head>
-<body>
-
-<div class="page">
+<body oncontextmenu="return false;"> <div class="page">
   <div class="top-section">
     <div class="codes-container">
       <div class="codes" id="codeButtons"></div>
@@ -96,6 +181,7 @@
   let pendingLines = [];
   let isViewingHistory = false;
 
+  // 初始化
   function initButtons() {
     const codeBox = document.getElementById("codeButtons");
     codeBox.innerHTML = "";
@@ -103,7 +189,12 @@
     [...DEFAULT_CODES, ...custom].forEach(code => {
       const btn = document.createElement("button");
       btn.textContent = code;
-      btn.onclick = () => { if(isViewingHistory) toggleHistory(); currentExpr += code; render(); };
+      btn.onclick = (e) => { 
+        e.preventDefault(); // 防止點擊觸發縮放
+        if(isViewingHistory) toggleHistory(); 
+        currentExpr += code; 
+        render(); 
+      };
       codeBox.appendChild(btn);
     });
   }
@@ -128,14 +219,11 @@
     render();
   }
 
-  // 歸檔核心邏輯
   function processArchive() {
     if (currentExpr) calculate();
     if (pendingLines.length === 0) return false;
-
     const stats = JSON.parse(localStorage.getItem(STORAGE_KEYS.STATS) || "{}");
     const history = JSON.parse(localStorage.getItem(STORAGE_KEYS.HISTORY) || "[]");
-
     pendingLines.forEach(line => {
       history.push(`${line.expr}＝${line.total}`);
       line.expr.split("+").forEach(part => {
@@ -151,21 +239,15 @@
         }
       });
     });
-
     localStorage.setItem(STORAGE_KEYS.STATS, JSON.stringify(stats));
     localStorage.setItem(STORAGE_KEYS.HISTORY, JSON.stringify(history));
     pendingLines = []; currentExpr = ""; render();
     return true;
   }
 
-  // 「結束歸檔」按鈕
-  document.getElementById("archiveBtn").onclick = () => {
-    if (processArchive()) alert("歸檔成功！");
-  };
+  document.getElementById("archiveBtn").onclick = () => { if (processArchive()) alert("歸檔成功！"); };
 
-  // 「代號統計」按鈕：離開前判斷
   document.getElementById("toStatsBtn").onclick = () => {
-    // 檢查是否有尚未歸檔的內容（pendingLines 或正在輸入的內容）
     if (pendingLines.length > 0 || currentExpr !== "") {
       if (confirm("將離開此畫面，系統將自動結束歸檔。")) {
         processArchive();
@@ -208,7 +290,8 @@
   };
 
   document.querySelectorAll(".calc-grid button").forEach(btn => {
-    btn.onclick = () => {
+    btn.onclick = (e) => {
+      e.preventDefault();
       if (isViewingHistory) toggleHistory();
       const v = btn.dataset.value, a = btn.dataset.action;
       if (v) currentExpr += v;
