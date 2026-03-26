@@ -9,123 +9,44 @@
     * { 
       box-sizing: border-box; 
       -webkit-tap-highlight-color: transparent; 
-      touch-action: manipulation; /* 禁用雙擊縮放 */
-      user-select: none; /* 禁用長按反白選取文字 */
+      touch-action: manipulation; 
+      user-select: none; 
       -webkit-user-select: none;
     }
 
     body { 
-      margin: 0; 
-      font-family: "Microsoft JhengHei", sans-serif; 
-      background: #efefef; 
-      height: 100vh; 
-      overflow: hidden; /* 禁止全頁面滑動 */
+      margin: 0; font-family: "Microsoft JhengHei", sans-serif; 
+      background: #efefef; height: 100vh; overflow: hidden; 
     }
     
-    .page { 
-      display: flex; 
-      flex-direction: column; 
-      height: 100vh; 
-      padding: 12px; /* 縮小邊距 */
-      gap: 12px; 
-    }
+    .page { display: flex; flex-direction: column; height: 100vh; padding: 12px; gap: 12px; }
 
-    /* 上段：佈局微調縮小 */
-    .top-section { 
-      display: grid; 
-      grid-template-columns: 400px 1fr; /* 寬度從450縮至400 */
-      gap: 12px; 
-      flex: 1; 
-      min-height: 0; 
-    }
+    .top-section { display: grid; grid-template-columns: 400px 1fr; gap: 12px; flex: 1; min-height: 0; }
 
-    .codes-container { 
-      overflow-y: auto; 
-      background: #fff; 
-      border-radius: 8px; 
-      padding: 8px; 
-      border: 1px solid #ccc; 
-    }
-
-    .codes { 
-      display: grid; 
-      grid-template-columns: repeat(6, 1fr); 
-      gap: 6px; 
-    }
-
-    .codes button { 
-      height: 52px; /* 稍微變矮一點點 */
-      font-size: 20px; 
-      border: 2px solid #333; 
-      border-radius: 8px; 
-      background: #fff; 
-      cursor: pointer; 
-    }
+    .codes-container { overflow-y: auto; background: #fff; border-radius: 8px; padding: 8px; border: 1px solid #ccc; }
+    .codes { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; }
+    .codes button { height: 52px; font-size: 20px; border: 2px solid #333; border-radius: 8px; background: #fff; cursor: pointer; }
 
     .screen { 
-      background: #000; 
-      color: #00ff41; 
-      padding: 15px; 
-      font-size: 26px; 
-      border-radius: 8px; 
-      overflow-y: auto; 
-      white-space: pre-wrap;
-      user-select: text; /* 只有黑幕內允許選取內容（如果需要複製的話） */
-      -webkit-user-select: text;
+      background: #000; color: #00ff41; padding: 15px; font-size: 26px; 
+      border-radius: 8px; overflow-y: auto; white-space: pre-wrap;
+      user-select: text; -webkit-user-select: text;
     }
 
-    /* 下段：計算盤縮小高度 */
-    .bottom-section { 
-      display: grid; 
-      grid-template-columns: 400px 1fr; 
-      gap: 12px; 
-      height: 280px; /* 從320縮至280 */
-      flex-shrink: 0; 
-    }
+    .bottom-section { display: grid; grid-template-columns: 400px 1fr; gap: 12px; height: 280px; flex-shrink: 0; }
 
     .calc-grid { 
-      display: grid; 
-      grid-template-columns: repeat(3, 1fr) 90px; 
-      grid-template-rows: repeat(4, 1fr);
-      background: #bbb; 
-      gap: 1px; 
-      border: 2px solid #666;
+      display: grid; grid-template-columns: repeat(3, 1fr) 90px; grid-template-rows: repeat(4, 1fr);
+      background: #bbb; gap: 1px; border: 2px solid #666;
     }
 
-    .calc-grid button { 
-      border: none; 
-      background: #d9d9d9; 
-      font-size: 28px; 
-      font-weight: bold; 
-      cursor: pointer; 
-    }
+    .calc-grid button { border: none; background: #d9d9d9; font-size: 28px; font-weight: bold; cursor: pointer; }
+    .calc-grid .wide-op { grid-column: 4; grid-row: span 2; background: #f39a18; color: white; }
 
-    .calc-grid .wide-op { 
-      grid-column: 4; 
-      grid-row: span 2; 
-      background: #f39a18; 
-      color: white; 
-    }
-
-    .action-grid { 
-      display: grid; 
-      grid-template-columns: repeat(2, 1fr); 
-      grid-template-rows: repeat(2, 1fr); 
-      gap: 8px; 
-    }
-
-    .action-btn { 
-      background: #b5b5b5; 
-      border: none; 
-      border-radius: 8px; 
-      font-size: 20px; 
-      font-weight: 700; 
-      cursor: pointer; 
-    }
-
+    .action-grid { display: grid; grid-template-columns: repeat(2, 1fr); grid-template-rows: repeat(2, 1fr); gap: 8px; }
+    .action-btn { background: #b5b5b5; border: none; border-radius: 8px; font-size: 20px; font-weight: 700; cursor: pointer; }
     .archive-btn { background: #e74c3c; color: white; }
 
-    /* 彈窗縮小 */
     .modal {
       display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
       background: rgba(0,0,0,0.7); justify-content: center; align-items: center; z-index: 100;
@@ -134,7 +55,9 @@
     .modal-content input { width: 100%; padding: 8px; font-size: 18px; margin: 12px 0; }
   </style>
 </head>
-<body oncontextmenu="return false;"> <div class="page">
+<body oncontextmenu="return false;">
+
+<div class="page">
   <div class="top-section">
     <div class="codes-container">
       <div class="codes" id="codeButtons"></div>
@@ -181,7 +104,15 @@
   let pendingLines = [];
   let isViewingHistory = false;
 
-  // 初始化
+  // 判斷最後一個字元類型
+  function getLastType() {
+    if (!currentExpr) return "empty";
+    const lastChar = currentExpr.slice(-1);
+    if (/\d/.test(lastChar)) return "number";
+    if (lastChar === "+") return "operator";
+    return "code"; 
+  }
+
   function initButtons() {
     const codeBox = document.getElementById("codeButtons");
     codeBox.innerHTML = "";
@@ -189,11 +120,14 @@
     [...DEFAULT_CODES, ...custom].forEach(code => {
       const btn = document.createElement("button");
       btn.textContent = code;
-      btn.onclick = (e) => { 
-        e.preventDefault(); // 防止點擊觸發縮放
-        if(isViewingHistory) toggleHistory(); 
-        currentExpr += code; 
-        render(); 
+      btn.onclick = (e) => {
+        e.preventDefault();
+        if(isViewingHistory) toggleHistory();
+        const type = getLastType();
+        // 【限制】：數字後禁代號，代號後禁代號
+        if (type === "number" || type === "code") return; 
+        currentExpr += code;
+        render();
       };
       codeBox.appendChild(btn);
     });
@@ -203,12 +137,15 @@
     if (isViewingHistory) return;
     let text = pendingLines.map(l => `${l.expr}＝${l.total}`).join("\n");
     if (currentExpr) text += (text ? "\n" : "") + currentExpr;
-    screen.textContent = text || "請開始輸入...";
+    screen.textContent = text || "請點選代號開始...";
     screen.scrollTop = screen.scrollHeight;
   }
 
   function calculate() {
-    if (!currentExpr || /[\+\-]$/.test(currentExpr)) return;
+    const type = getLastType();
+    // 【限制】：空值、代號結尾、加號結尾 不能按 ＝ (防止連續＝)
+    if (type === "empty" || type === "code" || type === "operator") return;
+
     const numbers = currentExpr.split("+").map(p => {
       const match = p.match(/\d+$/);
       return match ? parseInt(match[0]) : 0;
@@ -220,7 +157,10 @@
   }
 
   function processArchive() {
-    if (currentExpr) calculate();
+    if (currentExpr) {
+      const type = getLastType();
+      if (type === "number") calculate(); 
+    }
     if (pendingLines.length === 0) return false;
     const stats = JSON.parse(localStorage.getItem(STORAGE_KEYS.STATS) || "{}");
     const history = JSON.parse(localStorage.getItem(STORAGE_KEYS.HISTORY) || "[]");
@@ -253,9 +193,7 @@
         processArchive();
         location.href = "stats.html";
       }
-    } else {
-      location.href = "stats.html";
-    }
+    } else { location.href = "stats.html"; }
   };
 
   function toggleHistory() {
@@ -266,10 +204,7 @@
       const history = JSON.parse(localStorage.getItem(STORAGE_KEYS.HISTORY) || "[]");
       screen.textContent = history.length ? history.join("\n") : "暫無歸檔記錄";
       screen.scrollTop = 0;
-    } else {
-      btn.textContent = "觀看記錄";
-      render();
-    }
+    } else { btn.textContent = "觀看記錄"; render(); }
   }
 
   document.getElementById("historyBtn").onclick = toggleHistory;
@@ -294,10 +229,20 @@
       e.preventDefault();
       if (isViewingHistory) toggleHistory();
       const v = btn.dataset.value, a = btn.dataset.action;
-      if (v) currentExpr += v;
-      if (a === "plus") currentExpr += (currentExpr && !currentExpr.endsWith("+") ? "+" : "");
-      if (a === "equals") calculate();
-      if (a === "backspace") currentExpr = currentExpr.slice(0, -1);
+      const type = getLastType();
+
+      if (v) { currentExpr += v; }
+      if (a === "plus") {
+        // 【限制】：只有數字結尾才給按加號
+        if (type === "number") currentExpr += "+";
+      }
+      if (a === "equals") {
+        // calculate 內已包含連續＝的攔截
+        calculate();
+      }
+      if (a === "backspace") {
+        currentExpr = currentExpr.slice(0, -1);
+      }
       render();
     };
   });
