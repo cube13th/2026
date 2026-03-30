@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>iPad 代號計算器</title>
+  <title>iPad 代號計算器 - 版面重組版</title>
   <style>
     /* 鎖定手勢與縮放 */
     * { 
@@ -15,38 +15,121 @@
     }
 
     body { 
-      margin: 0; font-family: "Microsoft JhengHei", sans-serif; 
-      background: #efefef; height: 100vh; overflow: hidden; 
+      margin: 0; 
+      font-family: "Microsoft JhengHei", sans-serif; 
+      background: #efefef; 
+      height: 100vh; 
+      overflow: hidden; /* 禁止全頁面滑動 */
     }
     
-    .page { display: flex; flex-direction: column; height: 100vh; padding: 12px; gap: 12px; }
+    /* 核心佈局：2x2 網格 */
+    .page { 
+      display: grid; 
+      grid-template-columns: 1fr 420px; /* 左側伸縮，右側固定寬度(適合計算盤與6排代號) */
+      grid-template-rows: 280px 1fr;   /* 上排固定高度(配合計算機)，下排填滿 */
+      height: 100vh; 
+      padding: 10px; /* 縮小邊距 */
+      gap: 10px; /* 區塊間距 */
+    }
 
-    .top-section { display: grid; grid-template-columns: 400px 1fr; gap: 12px; flex: 1; min-height: 0; }
-
-    .codes-container { overflow-y: auto; background: #fff; border-radius: 8px; padding: 8px; border: 1px solid #ccc; }
-    .codes { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; }
-    .codes button { height: 52px; font-size: 20px; border: 2px solid #333; border-radius: 8px; background: #fff; cursor: pointer; }
-
+    /* 1. 左上：黑色螢幕 (Grid: 1,1) */
     .screen { 
-      background: #000; color: #00ff41; padding: 15px; font-size: 26px; 
-      border-radius: 8px; overflow-y: auto; white-space: pre-wrap;
-      user-select: text; -webkit-user-select: text;
+      grid-column: 1;
+      grid-row: 1;
+      background: #000; 
+      color: #00ff41; 
+      padding: 15px; 
+      font-size: 26px; 
+      border-radius: 8px; 
+      overflow-y: auto; 
+      white-space: pre-wrap;
+      user-select: text; 
+      -webkit-user-select: text;
+      border: 2px solid #333;
     }
 
-    .bottom-section { display: grid; grid-template-columns: 400px 1fr; gap: 12px; height: 280px; flex-shrink: 0; }
-
+    /* 2. 右上：數字計算盤 (Grid: 1,2) */
     .calc-grid { 
-      display: grid; grid-template-columns: repeat(3, 1fr) 90px; grid-template-rows: repeat(4, 1fr);
-      background: #bbb; gap: 1px; border: 2px solid #666;
+      grid-column: 2;
+      grid-row: 1;
+      display: grid; 
+      grid-template-columns: repeat(3, 1fr) 90px; 
+      grid-template-rows: repeat(4, 1fr);
+      background: #bbb; 
+      gap: 1px; 
+      border: 2px solid #666;
+      border-radius: 8px;
+      overflow: hidden; /* 確保圓角 */
+      height: 100%; /* 填滿 280px */
     }
 
-    .calc-grid button { border: none; background: #d9d9d9; font-size: 28px; font-weight: bold; cursor: pointer; }
-    .calc-grid .wide-op { grid-column: 4; grid-row: span 2; background: #f39a18; color: white; }
+    .calc-grid button { 
+      border: none; 
+      background: #d9d9d9; 
+      font-size: 28px; 
+      font-weight: bold; 
+      cursor: pointer; 
+    }
 
-    .action-grid { display: grid; grid-template-columns: repeat(2, 1fr); grid-template-rows: repeat(2, 1fr); gap: 8px; }
-    .action-btn { background: #b5b5b5; border: none; border-radius: 8px; font-size: 20px; font-weight: 700; cursor: pointer; }
+    .calc-grid .wide-op { 
+      grid-column: 4; 
+      grid-row: span 2; 
+      background: #f39a18; 
+      color: white; 
+    }
+
+    /* 3. 左下：其他鈕 (Grid: 2,1) */
+    .action-grid { 
+      grid-column: 1;
+      grid-row: 2;
+      display: grid; 
+      grid-template-columns: repeat(2, 1fr); 
+      grid-template-rows: repeat(2, 1fr); 
+      gap: 8px; 
+      align-content: start; /* 往上縮 */
+      padding-top: 5px;
+    }
+
+    .action-btn { 
+      background: #b5b5b5; 
+      border: none; 
+      border-radius: 8px; 
+      font-size: 20px; 
+      font-weight: 700; 
+      cursor: pointer; 
+      height: 60px; /* 固定功能鈕高度 */
+    }
+
     .archive-btn { background: #e74c3c; color: white; }
 
+    /* 4. 右下：代號按鈕區 (Grid: 2,2) */
+    .codes-container { 
+      grid-column: 2;
+      grid-row: 2;
+      overflow-y: auto; 
+      background: #fff; 
+      border-radius: 8px; 
+      padding: 8px; 
+      border: 1px solid #ccc; 
+      height: calc(100% - 10px); /* 填滿剩餘高度，留一點底邊 */
+    }
+
+    .codes { 
+      display: grid; 
+      grid-template-columns: repeat(6, 1fr); 
+      gap: 6px; 
+    }
+
+    .codes button { 
+      height: 50px; /* 代號按鈕稍微變矮 */
+      font-size: 19px; 
+      border: 2px solid #333; 
+      border-radius: 8px; 
+      background: #fff; 
+      cursor: pointer; 
+    }
+
+    /* 彈窗樣式 (維持不變) */
     .modal {
       display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
       background: rgba(0,0,0,0.7); justify-content: center; align-items: center; z-index: 100;
@@ -58,29 +141,26 @@
 <body oncontextmenu="return false;">
 
 <div class="page">
-  <div class="top-section">
-    <div class="codes-container">
-      <div class="codes" id="codeButtons"></div>
-    </div>
-    <div id="screen" class="screen"></div>
+  <div id="screen" class="screen"></div>
+
+  <div class="calc-grid">
+    <button data-value="7">7</button><button data-value="8">8</button><button data-value="9">9</button>
+    <button class="wide-op" data-action="plus">+</button>
+    <button data-value="4">4</button><button data-value="5">5</button><button data-value="6">6</button>
+    <button data-value="1">1</button><button data-value="2">2</button><button data-value="3">3</button>
+    <button class="wide-op" data-action="equals">＝</button>
+    <button data-action="backspace">←</button><button data-value="0">0</button><button data-value="00">00</button>
   </div>
 
-  <div class="bottom-section">
-    <div class="calc-grid">
-      <button data-value="7">7</button><button data-value="8">8</button><button data-value="9">9</button>
-      <button class="wide-op" data-action="plus">+</button>
-      <button data-value="4">4</button><button data-value="5">5</button><button data-value="6">6</button>
-      <button data-value="1">1</button><button data-value="2">2</button><button data-value="3">3</button>
-      <button class="wide-op" data-action="equals">＝</button>
-      <button data-action="backspace">←</button><button data-value="0">0</button><button data-value="00">00</button>
-    </div>
+  <div class="action-grid">
+    <button class="action-btn" id="toStatsBtn">代號統計</button>
+    <button class="action-btn" id="historyBtn">觀看記錄</button>
+    <button class="action-btn" id="addCodeBtn">新增代號</button>
+    <button class="action-btn archive-btn" id="archiveBtn">結束歸檔</button>
+  </div>
 
-    <div class="action-grid">
-      <button class="action-btn" id="toStatsBtn">代號統計</button>
-      <button class="action-btn" id="historyBtn">觀看記錄</button>
-      <button class="action-btn" id="addCodeBtn">新增代號</button>
-      <button class="action-btn archive-btn" id="archiveBtn">結束歸檔</button>
-    </div>
+  <div class="codes-container">
+    <div class="codes" id="codeButtons"></div>
   </div>
 </div>
 
@@ -94,9 +174,10 @@
 </div>
 
 <script>
+  /* JS 邏輯完全維持不變，僅初始化 initButtons */
   const DEFAULT_CODES = [
     "A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q","R","S","T","U","V","W","X","Y","Z",
-    "ㄅ","ㄆ","ㄇ","ㄈ","ㄌ","ㄍ","山","ya"
+    "ㄅ","ㄆ","ㄇ","圖","ㄈ","ㄌ","ㄍ","山","ya"
   ];
   const STORAGE_KEYS = { STATS: "codeCalc_stats", CUSTOM: "codeCalc_custom", HISTORY: "codeCalc_history" };
   const screen = document.getElementById("screen");
@@ -104,7 +185,6 @@
   let pendingLines = [];
   let isViewingHistory = false;
 
-  // 判斷最後一個字元類型
   function getLastType() {
     if (!currentExpr) return "empty";
     const lastChar = currentExpr.slice(-1);
@@ -124,7 +204,6 @@
         e.preventDefault();
         if(isViewingHistory) toggleHistory();
         const type = getLastType();
-        // 【限制】：數字後禁代號，代號後禁代號
         if (type === "number" || type === "code") return; 
         currentExpr += code;
         render();
@@ -143,9 +222,7 @@
 
   function calculate() {
     const type = getLastType();
-    // 【限制】：空值、代號結尾、加號結尾 不能按 ＝ (防止連續＝)
     if (type === "empty" || type === "code" || type === "operator") return;
-
     const numbers = currentExpr.split("+").map(p => {
       const match = p.match(/\d+$/);
       return match ? parseInt(match[0]) : 0;
@@ -186,7 +263,6 @@
   }
 
   document.getElementById("archiveBtn").onclick = () => { if (processArchive()) alert("歸檔成功！"); };
-
   document.getElementById("toStatsBtn").onclick = () => {
     if (pendingLines.length > 0 || currentExpr !== "") {
       if (confirm("將離開此畫面，系統將自動結束歸檔。")) {
@@ -195,7 +271,6 @@
       }
     } else { location.href = "stats.html"; }
   };
-
   function toggleHistory() {
     isViewingHistory = !isViewingHistory;
     const btn = document.getElementById("historyBtn");
@@ -206,11 +281,9 @@
       screen.scrollTop = 0;
     } else { btn.textContent = "觀看記錄"; render(); }
   }
-
   document.getElementById("historyBtn").onclick = toggleHistory;
   document.getElementById("addCodeBtn").onclick = () => document.getElementById("addModal").style.display = "flex";
   function closeModal() { document.getElementById("addModal").style.display = "none"; }
-  
   document.getElementById("confirmAddBtn").onclick = () => {
     const val = document.getElementById("newCodeInput").value.trim();
     if (val && !DEFAULT_CODES.includes(val)) {
@@ -223,30 +296,19 @@
     }
     closeModal();
   };
-
   document.querySelectorAll(".calc-grid button").forEach(btn => {
     btn.onclick = (e) => {
       e.preventDefault();
       if (isViewingHistory) toggleHistory();
       const v = btn.dataset.value, a = btn.dataset.action;
       const type = getLastType();
-
       if (v) { currentExpr += v; }
-      if (a === "plus") {
-        // 【限制】：只有數字結尾才給按加號
-        if (type === "number") currentExpr += "+";
-      }
-      if (a === "equals") {
-        // calculate 內已包含連續＝的攔截
-        calculate();
-      }
-      if (a === "backspace") {
-        currentExpr = currentExpr.slice(0, -1);
-      }
+      if (a === "plus") { if (type === "number") currentExpr += "+"; }
+      if (a === "equals") { calculate(); }
+      if (a === "backspace") { currentExpr = currentExpr.slice(0, -1); }
       render();
     };
   });
-
   initButtons();
   render();
 </script>
