@@ -25,8 +25,10 @@
     /* 核心佈局：2x2 網格 */
     .page { 
       display: grid; 
-      grid-template-columns: 1fr 420px; /* 左側伸縮，右側固定寬度(適合計算盤與6排代號) */
-      grid-template-rows: 280px 1fr;   /* 上排固定高度(配合計算機)，下排填滿 */
+      /* 左側伸縮，右側固定寬度 (適合計算盤與4排代號) */
+      grid-template-columns: 1fr 380px; 
+      /* 上排固定高度 (配合計算機)，下排填滿 */
+      grid-template-rows: 280px 1fr;   
       height: 100vh; 
       padding: 10px; /* 縮小邊距 */
       gap: 10px; /* 區塊間距 */
@@ -53,7 +55,7 @@
       grid-column: 2;
       grid-row: 1;
       display: grid; 
-      grid-template-columns: repeat(3, 1fr) 90px; 
+      grid-template-columns: repeat(3, 1fr) 80px; /* 稍微縮窄功能鍵 */
       grid-template-rows: repeat(4, 1fr);
       background: #bbb; 
       gap: 1px; 
@@ -78,56 +80,73 @@
       color: white; 
     }
 
-    /* 3. 左下：其他鈕 (Grid: 2,1) */
-    .action-grid { 
-      grid-column: 1;
-      grid-row: 2;
-      display: grid; 
-      grid-template-columns: repeat(2, 1fr); 
-      grid-template-rows: repeat(2, 1fr); 
-      gap: 8px; 
-      align-content: start; /* 往上縮 */
-      padding-top: 5px;
-    }
-
-    .action-btn { 
-      background: #b5b5b5; 
-      border: none; 
-      border-radius: 8px; 
-      font-size: 20px; 
-      font-weight: 700; 
-      cursor: pointer; 
-      height: 60px; /* 固定功能鈕高度 */
-    }
-
-    .archive-btn { background: #e74c3c; color: white; }
-
-    /* 4. 右下：代號按鈕區 (Grid: 2,2) */
+    /* 3. 左下：代號按鈕區 (Grid: 2,1) (新位置) */
     .codes-container { 
-      grid-column: 2;
+      grid-column: 1;
       grid-row: 2;
       overflow-y: auto; 
       background: #fff; 
       border-radius: 8px; 
       padding: 8px; 
       border: 1px solid #ccc; 
-      height: calc(100% - 10px); /* 填滿剩餘高度，留一點底邊 */
+      height: 100%; /* 填滿剩餘高度 */
     }
 
     .codes { 
       display: grid; 
-      grid-template-columns: repeat(6, 1fr); 
+      /* 左側較寬，可以使用更多排，這裡設為8排 */
+      grid-template-columns: repeat(8, 1fr); 
       gap: 6px; 
     }
 
     .codes button { 
-      height: 50px; /* 代號按鈕稍微變矮 */
+      height: 50px; 
       font-size: 19px; 
       border: 2px solid #333; 
       border-radius: 8px; 
       background: #fff; 
       cursor: pointer; 
     }
+
+    /* 4. 右下：其他鈕 (Grid: 2,2) (新位置 & 緊密) */
+    .action-grid { 
+      grid-column: 2;
+      grid-row: 2;
+      display: grid; 
+      grid-template-columns: repeat(2, 1fr); 
+      grid-template-rows: repeat(2, 1fr); 
+      gap: 0; /* 【核心修改】：移除間隔 */
+      align-content: start; /* 往上縮 */
+      border: 2px solid #666; /* 給整體加個邊框，看起來像一個大按鈕組 */
+      border-radius: 8px;
+      overflow: hidden; /* 確保圓角 */
+      width: 100%;
+      /* 高度配合左側代號區的按鈕高度，這裡設為兩排按鈕的高度 */
+      height: 120px; 
+    }
+
+    .action-btn { 
+      background: #b5b5b5; 
+      /* 移除原本的 padding 和 margin */
+      border: none; 
+      /* 給內部按鈕加細邊框線 */
+      border-right: 1px solid #666;
+      border-bottom: 1px solid #666;
+      font-size: 20px; 
+      font-weight: 700; 
+      cursor: pointer; 
+      height: 100%; /* 填滿 grid 儲存格 */
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    /* 移除最右側和最下側的內部邊框，避免重複 */
+    .action-grid .action-btn:nth-child(even) { border-right: none; }
+    .action-grid .action-btn:nth-child(3),
+    .action-grid .action-btn:nth-child(4) { border-bottom: none; }
+
+    .archive-btn { background: #e74c3c; color: white; }
 
     /* 彈窗樣式 (維持不變) */
     .modal {
@@ -152,15 +171,15 @@
     <button data-action="backspace">←</button><button data-value="0">0</button><button data-value="00">00</button>
   </div>
 
+  <div class="codes-container">
+    <div class="codes" id="codeButtons"></div>
+  </div>
+
   <div class="action-grid">
     <button class="action-btn" id="toStatsBtn">代號統計</button>
     <button class="action-btn" id="historyBtn">觀看記錄</button>
     <button class="action-btn" id="addCodeBtn">新增代號</button>
     <button class="action-btn archive-btn" id="archiveBtn">結束歸檔</button>
-  </div>
-
-  <div class="codes-container">
-    <div class="codes" id="codeButtons"></div>
   </div>
 </div>
 
@@ -174,7 +193,7 @@
 </div>
 
 <script>
-  /* JS 邏輯完全維持不變，僅初始化 initButtons */
+  /* JS 邏輯完全維持不變 */
   const DEFAULT_CODES = [
     "A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q","R","S","T","U","V","W","X","Y","Z",
     "ㄅ","ㄆ","ㄇ","圖","ㄈ","ㄌ","ㄍ","山","ya"
