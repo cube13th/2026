@@ -54,34 +54,32 @@
       border-color: #f39a18;
     }
 
-    /* 「無代號」專用按鈕樣式 */
-    .no-code-btn-wrap {
-      margin-bottom: 10px;
-    }
-    .no-code-btn {
-      width: 100%;
-      height: 70px;
-      font-size: 26px;
-      font-weight: bold;
-      border: 2px solid #333;
-      border-radius: 10px;
-      background: #eee;
-      cursor: pointer;
-    }
-    .no-code-btn.active {
-      background: #f39a18;
-      color: white;
-      border-color: #f39a18;
+    /* 按鈕容器 */
+    .btn-group {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 5px;
     }
 
+    .no-code-btn {
+      width: 100%; height: 70px; font-size: 26px; font-weight: bold;
+      border: 2px solid #333; border-radius: 10px; background: #eee; cursor: pointer;
+    }
+    .no-code-btn.active { background: #f39a18; color: white; border-color: #f39a18; }
+
     .action-area {
-      height: 70px;
-      display: flex;
+      display: flex; gap: 10px; height: 70px;
     }
 
     .btn-back {
       flex: 1; background: #555; color: white; border: none;
       border-radius: 8px; font-size: 20px; cursor: pointer;
+    }
+
+    .btn-excel {
+      flex: 1.2; background: #217346; color: white; border: none;
+      border-radius: 8px; font-size: 20px; font-weight: bold; cursor: pointer;
     }
 
     /* 右側：統計數據區 */
@@ -113,23 +111,16 @@
     }
 
     table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 22px;
+      width: 100%; border-collapse: collapse; font-size: 22px;
     }
 
     table th {
-      background: #f8f8f8;
-      padding: 12px;
-      border: 1px solid #ddd;
-      position: sticky;
-      top: 0;
+      background: #f8f8f8; padding: 12px; border: 1px solid #ddd;
+      position: sticky; top: 0;
     }
 
     table td {
-      padding: 15px;
-      border: 1px solid #ddd;
-      text-align: center;
+      padding: 15px; border: 1px solid #ddd; text-align: center;
     }
 
     .empty-msg {
@@ -142,16 +133,16 @@
 <div class="page">
   <div class="left-panel">
     <div class="codes-scroll">
-      <div class="codes-grid" id="codeButtons">
-        </div>
+      <div class="codes-grid" id="codeButtons"></div>
     </div>
     
-    <div class="no-code-btn-wrap">
+    <div class="btn-group">
       <button class="no-code-btn" id="btn-無代號" onclick="showStats('無代號')">無代號</button>
-    </div>
-
-    <div class="action-area">
-      <button class="btn-back" onclick="location.href='index.html'">返回計算頁</button>
+      
+      <div class="action-area">
+        <button class="btn-back" onclick="location.href='index.html'">返回計算頁</button>
+        <button class="btn-excel" onclick="exportToExcel()">輸出 EXCEL 檔</button>
+      </div>
     </div>
   </div>
 
@@ -167,10 +158,9 @@
 </div>
 
 <script>
-  // 34 個預設代號
   const DEFAULT_CODES = [
     "A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q","R","S","T","U","V","W","X","Y","Z",
-    "ㄅ","ㄆ","ㄇ","ㄈ","ㄌ","ㄍ","山","ya"
+    "ㄅ","ㄆ","ㄇ","ㄈ","ㄊ","ㄌ","ㄍ","ㄏ","山","ya"
   ];
   
   const STORAGE_KEYS = { STATS: "codeCalc_stats", CUSTOM: "codeCalc_custom" };
@@ -178,8 +168,6 @@
   function initButtons() {
     const codeBox = document.getElementById("codeButtons");
     codeBox.innerHTML = "";
-    
-    // 讀取自定義代號
     const custom = JSON.parse(localStorage.getItem(STORAGE_KEYS.CUSTOM) || "[]");
     const allCodes = [...DEFAULT_CODES, ...custom];
 
@@ -193,19 +181,13 @@
   }
 
   function showStats(code) {
-    // 更新標題與按鈕選取狀態
     document.getElementById("currentCodeTitle").textContent = `代號：${code}`;
-    
-    // 清除所有按鈕（包括一般按鈕與無代號按鈕）的 active 狀態
     document.querySelectorAll(".codes-grid button, .no-code-btn").forEach(b => b.classList.remove("active"));
-    
     const activeBtn = document.getElementById(`btn-${code}`);
     if (activeBtn) activeBtn.classList.add("active");
 
-    // 讀取數據
     const allStats = JSON.parse(localStorage.getItem(STORAGE_KEYS.STATS) || "{}");
     const data = allStats[code] || [];
-    
     const tableContent = document.getElementById("tableContent");
     const totalDisplay = document.getElementById("totalDisplay");
 
@@ -215,11 +197,9 @@
       return;
     }
 
-    // 計算總和
     const total = data.reduce((sum, val) => sum + val, 0);
     totalDisplay.textContent = `Total: ${total.toLocaleString()}`;
 
-    // 生成表格 (每列 5 個數字)
     let html = `<table><thead><tr>`;
     const label = (code === "無代號") ? "數字" : code;
     for(let i=0; i<5; i++) html += `<th>${label}</th>`;
@@ -233,11 +213,63 @@
       html += `</tr>`;
     }
     html += `</tbody></table>`;
-    
     tableContent.innerHTML = html;
   }
 
-  // 初始執行
+  // 核心功能：輸出 Excel (CSV 格式)
+  function exportToExcel() {
+    const allStats = JSON.parse(localStorage.getItem(STORAGE_KEYS.STATS) || "{}");
+    const custom = JSON.parse(localStorage.getItem(STORAGE_KEYS.CUSTOM) || "[]");
+    
+    // 取得所有有資料的代號標題 (包含無代號)
+    const activeCodes = Object.keys(allStats).filter(key => allStats[key].length > 0);
+    
+    if (activeCodes.length === 0) {
+      alert("目前沒有任何統計資料可以輸出。");
+      return;
+    }
+
+    // 找出最長的數列長度，決定表格行數
+    const maxRows = Math.max(...activeCodes.map(code => allStats[code].length));
+
+    // 建立 CSV 內容
+    // 1. 標題列
+    let csvContent = activeCodes.join(",") + "\n";
+
+    // 2. 數據列
+    for (let i = 0; i < maxRows; i++) {
+      let row = activeCodes.map(code => {
+        const val = allStats[code][i];
+        return val !== undefined ? val : ""; // 如果該列沒數字就留白
+      });
+      csvContent += row.join(",") + "\n";
+    }
+
+    // 加上 UTF-8 BOM 避免 Excel 開啟時亂碼
+    const blob = new Blob(["\ufeff" + csvContent], { type: 'text/csv;charset=utf-8;' });
+    
+    // 檔名處理：加上日期時間
+    const now = new Date();
+    const dateStr = now.getFullYear() + 
+                    (now.getMonth() + 1).toString().padStart(2, '0') + 
+                    now.getDate().toString().padStart(2, '0');
+    const timeStr = now.getHours().toString().padStart(2, '0') + 
+                    now.getMinutes().toString().padStart(2, '0');
+    const fileName = `統計資料_${dateStr}_${timeStr}.csv`;
+
+    // 下載流程
+    const link = document.createElement("a");
+    if (link.download !== undefined) {
+      const url = URL.createObjectURL(blob);
+      link.setAttribute("href", url);
+      link.setAttribute("download", fileName);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+  }
+
   initButtons();
 </script>
 </body>
