@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>iPad 代號計算器 - 版面重組版</title>
+  <title>iPad 代號計算器 - 刪除功能版</title>
   <style>
     /* 鎖定手勢與縮放 */
     * { 
@@ -19,22 +19,18 @@
       font-family: "Microsoft JhengHei", sans-serif; 
       background: #efefef; 
       height: 100vh; 
-      overflow: hidden; /* 禁止全頁面滑動 */
+      overflow: hidden; 
     }
     
-    /* 核心佈局：2x2 網格 */
     .page { 
       display: grid; 
-      /* 左側伸縮，右側固定寬度 (適合計算盤與4排代號) */
       grid-template-columns: 1fr 380px; 
-      /* 上排固定高度 (配合計算機)，下排填滿 */
       grid-template-rows: 280px 1fr;   
       height: 100vh; 
-      padding: 10px; /* 縮小邊距 */
-      gap: 10px; /* 區塊間距 */
+      padding: 10px; 
+      gap: 10px; 
     }
 
-    /* 1. 左上：黑色螢幕 (Grid: 1,1) */
     .screen { 
       grid-column: 1;
       grid-row: 1;
@@ -50,19 +46,18 @@
       border: 2px solid #333;
     }
 
-    /* 2. 右上：數字計算盤 (Grid: 1,2) */
     .calc-grid { 
       grid-column: 2;
       grid-row: 1;
       display: grid; 
-      grid-template-columns: repeat(3, 1fr) 80px; /* 稍微縮窄功能鍵 */
+      grid-template-columns: repeat(3, 1fr) 80px; 
       grid-template-rows: repeat(4, 1fr);
       background: #bbb; 
       gap: 1px; 
       border: 2px solid #666;
       border-radius: 8px;
-      overflow: hidden; /* 確保圓角 */
-      height: 100%; /* 填滿 280px */
+      overflow: hidden; 
+      height: 100%; 
     }
 
     .calc-grid button { 
@@ -80,7 +75,6 @@
       color: white; 
     }
 
-    /* 3. 左下：代號按鈕區 (Grid: 2,1) (新位置) */
     .codes-container { 
       grid-column: 1;
       grid-row: 2;
@@ -89,12 +83,11 @@
       border-radius: 8px; 
       padding: 8px; 
       border: 1px solid #ccc; 
-      height: 100%; /* 填滿剩餘高度 */
+      height: 100%; 
     }
 
     .codes { 
       display: grid; 
-      /* 左側較寬，可以使用更多排，這裡設為8排 */
       grid-template-columns: repeat(8, 1fr); 
       gap: 6px; 
     }
@@ -108,47 +101,42 @@
       cursor: pointer; 
     }
 
-    /* 4. 右下：其他鈕 (Grid: 2,2) (新位置 & 緊密) */
+    /* 右下區塊調整為 3排2列 容納更多按鈕 */
     .action-grid { 
       grid-column: 2;
       grid-row: 2;
       display: grid; 
       grid-template-columns: repeat(2, 1fr); 
-      grid-template-rows: repeat(2, 1fr); 
-      gap: 0; /* 【核心修改】：移除間隔 */
-      align-content: start; /* 往上縮 */
-      border: 2px solid #666; /* 給整體加個邊框，看起來像一個大按鈕組 */
+      grid-template-rows: repeat(3, 1fr); 
+      gap: 0; 
+      align-content: start; 
+      border: 2px solid #666; 
       border-radius: 8px;
-      overflow: hidden; /* 確保圓角 */
+      overflow: hidden; 
       width: 100%;
-      /* 高度配合左側代號區的按鈕高度，這裡設為兩排按鈕的高度 */
-      height: 120px; 
+      height: 180px; 
     }
 
     .action-btn { 
       background: #b5b5b5; 
-      /* 移除原本的 padding 和 margin */
       border: none; 
-      /* 給內部按鈕加細邊框線 */
       border-right: 1px solid #666;
       border-bottom: 1px solid #666;
       font-size: 20px; 
       font-weight: 700; 
       cursor: pointer; 
-      height: 100%; /* 填滿 grid 儲存格 */
       display: flex;
       align-items: center;
       justify-content: center;
     }
     
-    /* 移除最右側和最下側的內部邊框，避免重複 */
     .action-grid .action-btn:nth-child(even) { border-right: none; }
-    .action-grid .action-btn:nth-child(3),
-    .action-grid .action-btn:nth-child(4) { border-bottom: none; }
+    .action-grid .action-btn:nth-last-child(1),
+    .action-grid .action-btn:nth-last-child(2) { border-bottom: none; }
 
     .archive-btn { background: #e74c3c; color: white; }
+    .delete-btn { background: #555; color: #fff; }
 
-    /* 彈窗樣式 (維持不變) */
     .modal {
       display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
       background: rgba(0,0,0,0.7); justify-content: center; align-items: center; z-index: 100;
@@ -179,7 +167,8 @@
     <button class="action-btn" id="toStatsBtn">代號統計</button>
     <button class="action-btn" id="historyBtn">觀看記錄</button>
     <button class="action-btn" id="addCodeBtn">新增代號</button>
-    <button class="action-btn archive-btn" id="archiveBtn">結束歸檔</button>
+    <button class="action-btn delete-btn" id="delLastBtn">刪除上一筆</button>
+    <button class="action-btn archive-btn" id="archiveBtn" style="grid-column: span 2;">結束歸檔</button>
   </div>
 </div>
 
@@ -193,7 +182,6 @@
 </div>
 
 <script>
-  /* JS 邏輯完全維持不變 */
   const DEFAULT_CODES = [
     "A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q","R","S","T","U","V","W","X","Y","Z",
     "ㄅ","ㄆ","ㄇ","ㄈ","ㄊ","ㄌ","ㄍ","ㄏ","ㄕ","紅","na","山","ya"
@@ -252,6 +240,65 @@
     render();
   }
 
+  // 刪除上一筆的邏輯
+  function deleteLastRecord() {
+    // 1. 先查暫存區 (尚未歸檔的)
+    if (pendingLines.length > 0) {
+      const last = pendingLines[pendingLines.length - 1];
+      if (confirm(`是否刪除(未歸檔)最後一筆？\n${last.expr}＝${last.total}`)) {
+        pendingLines.pop();
+        render();
+        alert("已刪除");
+      }
+      return;
+    }
+
+    // 2. 查歷史記錄 (已歸檔的)
+    const history = JSON.parse(localStorage.getItem(STORAGE_KEYS.HISTORY) || "[]");
+    if (history.length > 0) {
+      const lastStr = history[history.length - 1];
+      if (confirm(`最後一筆已歸檔，是否從統計中扣除並刪除？\n${lastStr}`)) {
+        const stats = JSON.parse(localStorage.getItem(STORAGE_KEYS.STATS) || "{}");
+        
+        // 解析算式部分 (移除 "＝總和")
+        const expr = lastStr.split("＝")[0];
+        const parts = expr.split("+");
+
+        parts.forEach(part => {
+          const codeMatch = part.match(/^([^\d]+)(\d+)$/);
+          if (codeMatch) {
+            const code = codeMatch[1], val = parseInt(codeMatch[2]);
+            if (stats[code]) {
+              const idx = stats[code].indexOf(val);
+              if (idx > -1) stats[code].splice(idx, 1);
+              if (stats[code].length === 0) delete stats[code];
+            }
+          } else if (/^\d+$/.test(part)) {
+            const val = parseInt(part);
+            if (stats["無代號"]) {
+              const idx = stats["無代號"].indexOf(val);
+              if (idx > -1) stats["無代號"].splice(idx, 1);
+              if (stats["無代號"].length === 0) delete stats["無代號"];
+            }
+          }
+        });
+
+        history.pop();
+        localStorage.setItem(STORAGE_KEYS.HISTORY, JSON.stringify(history));
+        localStorage.setItem(STORAGE_KEYS.STATS, JSON.stringify(stats));
+        
+        if (isViewingHistory) {
+            screen.textContent = history.length ? history.join("\n") : "暫無歸檔記錄";
+        } else {
+            render();
+        }
+        alert("已從歷史與統計中移除");
+      }
+    } else {
+      alert("目前沒有任何記錄可刪除");
+    }
+  }
+
   function processArchive() {
     if (currentExpr) {
       const type = getLastType();
@@ -281,6 +328,7 @@
     return true;
   }
 
+  document.getElementById("delLastBtn").onclick = deleteLastRecord;
   document.getElementById("archiveBtn").onclick = () => { if (processArchive()) alert("歸檔成功！"); };
   document.getElementById("toStatsBtn").onclick = () => {
     if (pendingLines.length > 0 || currentExpr !== "") {
